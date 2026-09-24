@@ -1,0 +1,7 @@
+*.jpeg
+*.png
+*.jpg
+__pycache__/
+students
+*.npz
+*.json
