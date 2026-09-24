@@ -1,0 +1,1 @@
+student images here, preferably <Student Name>.image format
