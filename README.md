@@ -36,11 +36,12 @@ attendance_vision/
 - NumPy
 - `face_recognition`
 - `dlib` (installed as a dependency of `face_recognition`)
+- `ultralytics` (YOLO face detection)
 
 Install the Python packages with:
 
 ```powershell
-pip install opencv-python numpy face_recognition
+pip install opencv-python numpy face_recognition ultralytics
 ```
 
 On Windows, installing `dlib` may require a compatible prebuilt package or a C++ build environment, depending on the Python version.
@@ -91,6 +92,20 @@ The script will:
 4. Match detected faces against the registered students.
 5. Print the present students in the terminal.
 6. Save the annotated image as `attendance_result.jpg`.
+
+## Run YOLO Face Detection
+
+The standalone detector runs both HOG and YOLO, then merges overlapping detections. It saves three annotated images:
+
+- `detected_faces_hog.jpg` for HOG detections
+- `detected_faces_yolo.jpg` for YOLO detections
+- `detected_faces_combined.jpg` for the merged result
+
+```powershell
+python detect_faces.py
+```
+
+The first run downloads the YOLO face model into the local `weights/` directory.
 
 ## Cache Behavior
 
