@@ -4,10 +4,13 @@ import cv2
 import face_recognition
 import numpy as np
 
+from detect_faces import ensure_model, yolo_face_locations
 import register_students as registry
 
 BASE_DIR = Path(__file__).resolve().parent
 STUDENTS_DIR = BASE_DIR / "students"
+TEST_DIR = BASE_DIR / "photos"
+DETECTIONS_DIR = BASE_DIR / "detections"
 
 # inference
 def process_classroom_attendance(classroom_image_path, output_image_path=None):
@@ -19,38 +22,55 @@ def process_classroom_attendance(classroom_image_path, output_image_path=None):
     
     classroom_image = face_recognition.load_image_file(classroom_image_path)
     
-    # Find all face locations and their corresponding embeddings in the photo
-    face_locations = face_recognition.face_locations(img=classroom_image,model="hog")
+    classroom_image_bgr = cv2.cvtColor(classroom_image, cv2.COLOR_RGB2BGR)
+    # face_recognition_locations = face_recognition.face_locations(
+    #     img=classroom_image,
+    #     number_of_times_to_upsample=1,
+    #     model="hog",
+    # )
+    
+    yolo_locations = yolo_face_locations(
+        classroom_image_bgr,
+        ensure_model(),
+    )
+
+    # if len(yolo_locations) > len(face_recognition_locations):
+    #     face_locations = yolo_locations
+    #     selected_detector = "YOLOv8n-face"
+    # else:
+    #     face_locations = face_recognition_locations
+    #     selected_detector = "face_recognition"
+
+    face_locations=yolo_locations
+    selected_detector="YOLOv8n-face"
+
+    print(f"YOLOv8n-face detections: {len(yolo_locations)}")
+    # print(f"face_recognition detections: {len(face_recognition_locations)}")
+    print(f"Using {len(face_locations)} locations from {selected_detector}")
+    
     face_embeddings = face_recognition.face_encodings(classroom_image, face_locations,num_jitters=10,model="large")
 
     print(f"Detected {len(face_embeddings)} face(s) in the classroom photo.")
     present_students = set()
-    annotated_image = cv2.cvtColor(classroom_image, cv2.COLOR_RGB2BGR)
+    annotated_image = classroom_image_bgr
 
     # Loop through each face found in the classroom photo
     for face_location, current_face_embedding in zip(face_locations, face_embeddings):
-        # Compare current face against ALL registered student faces
-        # tolerance=0.6 is the default (lower is stricter, higher is looser)
-        matches = face_recognition.compare_faces(
-            registry.known_face_embeddings,
-            current_face_embedding,
-            tolerance=0.6,
-        )
-        name = "Unknown"
-
-        # Alternatively, use face_distance to find the absolute closest match
+        # Compare current face against ALL registered student faces tolerance=0.6 is the default (lower is stricter, higher is looser)
         face_distances = face_recognition.face_distance(
             registry.known_face_embeddings,
             current_face_embedding,
         )
-        
+        print(face_distances)
+        print(np.min(face_distances))
+
+        name = "Unknown"
         if len(face_distances) > 0:
             best_match_index = np.argmin(face_distances)
-            # If the closest match is within our match array verification
-            if matches[best_match_index]:
+            if face_distances[best_match_index] <= 0.6:
                 name = registry.known_face_names[best_match_index]
                 present_students.add(name)
-
+                
         top, right, bottom, left = face_location
         box_color = (0, 180, 0) if name != "Unknown" else (0, 0, 255)
 
@@ -114,8 +134,8 @@ if __name__ == "__main__":
     # load cached embedding/build
     registry.register_students_from_folder(str(STUDENTS_DIR))
 
-    test_group_photo = BASE_DIR / "class_photo_2.jpeg"
-    output_image = BASE_DIR / "attendance_result.jpg"
+    test_group_photo = TEST_DIR / "team_photo.jpg"
+    output_image = DETECTIONS_DIR / "team_photo.jpg"
     
     if test_group_photo.exists():
         attendance_sheet = process_classroom_attendance(

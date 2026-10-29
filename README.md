@@ -35,12 +35,13 @@ attendance_vision/
 - OpenCV
 - NumPy
 - `face_recognition`
+- `ultralytics`
 - `dlib` (installed as a dependency of `face_recognition`)
 
 Install the Python packages with:
 
 ```powershell
-pip install opencv-python numpy face_recognition
+pip install opencv-python numpy face_recognition ultralytics
 ```
 
 On Windows, installing `dlib` may require a compatible prebuilt package or a C++ build environment, depending on the Python version.
@@ -111,7 +112,13 @@ students_embeddings_meta.json
 
 ## Other Script
 
-`detect_faces.py` is a smaller example that detects faces and saves bounding boxes to `detected_faces.jpg`. It does not perform student recognition or attendance matching.
+`detect_faces.py` runs both the YOLOv8n face model from [akanametov/yolo-face](https://github.com/akanametov/yolo-face) and `face_recognition` on the same image. It draws the bounding boxes from whichever detector reports more faces, saves them to `detected_faces.jpg`, and displays the result. The YOLO model is downloaded automatically on its first run.
+
+Run it from the project directory:
+
+```powershell
+python detect_faces.py class_photo_2.jpeg
+```
 
 ## Limitations
 
